@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wsdl:definitions name="PatientAppointmentService"
+                  targetNamespace="http://stmatthews.hospital.com/patient/AppointmentProcess"
+                  xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/"
+                  xmlns:client="http://stmatthews.hospital.com/patient/AppointmentProcess"
+                  xmlns:plnk="http://schemas.xmlsoap.org/ws/2003/05/partner-link/">
+ <!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	TYPE DEFINITION - List of services participating in this BPEL process
+	The default output of the BPEL designer uses strings as input and 
+	output to the BPEL Process. But you can define or import any XML 
+	Schema type and use them as part of the message types.
+	~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+ <wsdl:types>
+  <schema xmlns="http://www.w3.org/2001/XMLSchema">
+   <import namespace="http://stmatthews.hospital.com/patient/AppointmentProcess"
+           schemaLocation="xsd/PatientAppointmentService.xsd"/>
+  </schema>
+ </wsdl:types>
+ <!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	MESSAGE TYPE DEFINITION - Definition of the message types used as 
+	part of the port type defintions
+	~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+ <wsdl:message name="PatientAppointmentServiceRequestMessage">
+  <wsdl:part name="payload" element="client:AppointmentServiceProcessRequest"/>
+ </wsdl:message>
+ <wsdl:message name="PatientAppointmentServiceResponseMessage">
+  <wsdl:part name="payload" element="client:AppointmentServiceProcessResponse"/>
+ </wsdl:message>
+ <!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	PORT TYPE DEFINITION - A port type groups a set of operations into
+	a logical service unit.
+	~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+ <!-- portType implemented by the PatientAppointmentService BPEL process -->
+ <wsdl:portType name="PatientAppointmentService">
+  <wsdl:operation name="process">
+   <wsdl:input message="client:PatientAppointmentServiceRequestMessage"/>
+  </wsdl:operation>
+ </wsdl:portType>
+ <!-- portType implemented by the requester of PatientAppointmentService BPEL process
+	for asynchronous callback purposes
+	-->
+ <wsdl:portType name="PatientAppointmentServiceCallback">
+  <wsdl:operation name="processResponse">
+   <wsdl:input message="client:PatientAppointmentServiceResponseMessage"/>
+  </wsdl:operation>
+ </wsdl:portType>
+ <!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	PARTNER LINK TYPE DEFINITION
+	the PatientAppointmentService partnerLinkType binds the provider and
+	requester portType into an asynchronous conversation.
+	~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+ <plnk:partnerLinkType name="PatientAppointmentService">
+  <plnk:role name="PatientAppointmentServiceProvider">
+   <plnk:portType name="client:PatientAppointmentService"/>
+  </plnk:role>
+  <plnk:role name="PatientAppointmentServiceRequester">
+   <plnk:portType name="client:PatientAppointmentServiceCallback"/>
+  </plnk:role>
+ </plnk:partnerLinkType>
+</wsdl:definitions>

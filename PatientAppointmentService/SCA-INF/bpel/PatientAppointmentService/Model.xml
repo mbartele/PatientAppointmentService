@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<process name="PatientAppointmentService" targetNamespace="http://stmatthews.hospital.com/patient/AppointmentProcess" xmlns="http://schemas.xmlsoap.org/ws/2003/03/business-process/" xmlns:client="http://stmatthews.hospital.com/patient/AppointmentProcess" xmlns:ora="http://schemas.oracle.com/xpath/extension" xmlns:bpelx="http://schemas.oracle.com/bpel/extension" xmlns:bpws="http://schemas.xmlsoap.org/ws/2003/03/business-process/" xmlns:bpel2="http://docs.oasis-open.org/wsbpel/2.0/process/executable" xmlns:ns1="http://stmatthews.hospital.com/patient/PatientDataService" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xp20="http://www.oracle.com/XSL/Transform/java/oracle.tip.pc.services.functions.Xpath20" xmlns:oraext="http://www.oracle.com/XSL/Transform/java/oracle.tip.pc.services.functions.ExtFunc" xmlns:dvm="http://www.oracle.com/XSL/Transform/java/oracle.tip.dvm.LookupValue" xmlns:hwf="http://xmlns.oracle.com/bpel/workflow/xpath" xmlns:ids="http://xmlns.oracle.com/bpel/services/IdentityService/xpath" xmlns:bpm="http://xmlns.oracle.com/bpmn20/extensions" xmlns:xdk="http://schemas.oracle.com/bpel/extension/xpath/function/xdk" xmlns:xref="http://www.oracle.com/XSL/Transform/java/oracle.tip.xref.xpath.XRefXPathFunctions" xmlns:ldap="http://schemas.oracle.com/xpath/extension/ldap" id="BpPrc0">
+
+    <!-- 
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        PARTNERLINKS                                                      
+        List of services participating in this BPEL process               
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    --> 
+    <partnerLinks>
+        <!-- 
+      The 'client' role represents the requester of this service. It is 
+      used for callback. The location and correlation information associated
+      with the client role are automatically set using WS-Addressing.
+    -->
+        <partnerLink name="PatientAppointmentService" partnerLinkType="client:PatientAppointmentService" myRole="PatientAppointmentServiceProvider" partnerRole="PatientAppointmentServiceRequester"/>
+        <partnerLink name="PatientDataService" partnerLinkType="ns1:PatientDataService" partnerRole="PatientDataServiceProvider"/>
+    </partnerLinks>
+
+    <!-- 
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        VARIABLES                                                        
+        List of messages and XML documents used within this BPEL process 
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    -->
+    <variables>
+        <!-- Reference to the message passed as input during initiation -->
+        <variable name="inputVariable" messageType="client:PatientAppointmentServiceRequestMessage"/>
+
+        <!-- Reference to the message that will be sent back to the requester during callback -->
+        <variable name="outputVariable" messageType="client:PatientAppointmentServiceResponseMessage"/>
+        <variable name="processIdentifier" type="xsd:string"/>
+        <variable name="Patient" messageType="ns1:PatientDataServiceResponseMessage"/>
+    </variables>
+
+    <!-- 
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+       ORCHESTRATION LOGIC                                               
+       Set of activities coordinating the flow of messages across the    
+       services integrated within this business process                  
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    -->
+    <sequence name="main" id="BpSeq0">
+        <!-- Receive input from requestor. (Note: This maps to operation defined in PatientAppointmentService.wsdl) -->
+        <receive name="receiveReferral" partnerLink="PatientAppointmentService" portType="client:PatientAppointmentService" operation="process" variable="inputVariable" createInstance="yes" id="BpRcv0"/>
+        <scope name="RegisterPatientData" variableAccessSerializable="no" id="BpScp0">
+            <variables>
+                <variable name="RetrievePatientData_process_InputVariable" messageType="ns1:PatientDataServiceRequestMessage"/>
+            </variables>
+            <sequence name="Sequence4" id="BpSeq1">
+                <assign name="CopyPatientNameToLocalVariable" id="BpAss0">
+                    <copy>
+                        <from variable="inputVariable" part="payload" query="/client:AppointmentServiceProcessRequest/client:patientDetails/client:firstGivenName"/>
+                        <to variable="RetrievePatientData_process_InputVariable" part="payload" query="/ns1:PatientDataServiceProcessRequest/firstName"/>
+                    </copy>
+                    <copy>
+                        <from variable="inputVariable" part="payload" query="/client:AppointmentServiceProcessRequest/client:patientDetails/client:lastName"/>
+                        <to variable="RetrievePatientData_process_InputVariable" part="payload" query="/ns1:PatientDataServiceProcessRequest/lastName"/>
+                    </copy>
+                </assign>
+                <invoke name="RetrievePatientData" bpelx:invokeAsDetail="no" inputVariable="RetrievePatientData_process_InputVariable" outputVariable="Patient" partnerLink="PatientDataService" portType="ns1:PatientDataService" operation="process" id="BpInv0"/>
+            </sequence>
+        </scope>
+        <assign name="AssignProcessIdentifier" id="BpAss1">
+            <copy>
+                <from expression="ora:getInstanceId()"/>
+                <to variable="processIdentifier"/>
+            </copy>
+            <copy>
+                <from variable="processIdentifier"/>
+                <to variable="outputVariable" part="payload" query="/client:AppointmentServiceProcessResponse/client:appointmentIdentifier"/>
+            </copy>
+        </assign>
+        <!-- 
+          Asynchronous callback to the requester. (Note: the callback location and correlation id is transparently handled using WS-addressing.)
+        -->
+        <invoke name="reportAppointmentProcessIdentifier" partnerLink="PatientAppointmentService" portType="client:PatientAppointmentServiceCallback" operation="processResponse" inputVariable="outputVariable" bpelx:invokeAsDetail="no" id="BpInv1"/>
+        <!--<while name="While1">
+            <sequence name="Sequence3">
+                <scope name="ScheduleNotifyAndWait"
+                       variableAccessSerializable="no">
+                    <eventHandlers>
+                        <onMessage/>
+                    </eventHandlers>
+                    <sequence name="Sequence2">
+                        <flow name="Parallel_PrepareInstructions_ScheduleAppointment">
+                            <sequence name="Sequence">
+                                <scope name="ScheduleAppointment"
+                                       variableAccessSerializable="no"/>
+                            </sequence>
+                            <sequence name="Sequence1">
+                                <scope name="PrepareInstructions"
+                                       variableAccessSerializable="no"/>
+                            </sequence>
+                        </flow>
+                        <scope name="NotifyPatient"
+                               variableAccessSerializable="no"/>
+                        <pick name="Pick1">
+                            <onMessage>
+                                <scope name="PatientArrivesForAppointment"
+                                       variableAccessSerializable="no"/>
+                            </onMessage>
+                            <onMessage>
+                                <scope name="Cancellation"
+                                       variableAccessSerializable="no"/>
+                            </onMessage>
+                            <onAlarm>
+                                <scope name="NoShow"
+                                       variableAccessSerializable="no"/>
+                            </onAlarm>
+                        </pick>
+                        <onMessage>
+                            <scope name="PatientArrivesForAppointment"
+                                   variableAccessSerializable="no"/>
+                        </onMessage>
+                    </sequence>
+                </scope>
+            </sequence>
+        </while>-->
+    </sequence>
+</process><!--
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  Oracle JDeveloper BPEL Designer 
+  
+  Created: Mon Jun 22 08:57:48 CEST 2015
+  Author:  oracle
+  Type: BPEL 1.1 Process
+  Purpose: Asynchronous BPEL Process
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+-->

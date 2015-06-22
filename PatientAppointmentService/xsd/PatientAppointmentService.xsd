@@ -1,0 +1,70 @@
+<schema attributeFormDefault="unqualified" elementFormDefault="qualified"
+        targetNamespace="http://stmatthews.hospital.com/patient/AppointmentProcess"
+        xmlns:ap="http://stmatthews.hospital.com/patient/AppointmentProcess"
+        xmlns:sched="http://stmatthews.hospital.com/Scheduler"
+        xmlns="http://www.w3.org/2001/XMLSchema"
+        xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <element name="AppointmentServiceProcessRequest">
+    <complexType>
+      <sequence>
+        <element name="appointmentRequestHeader"
+                 type="ap:appointmentRequestHeader"/>
+        <element name="patientDetails" type="ap:patientDetailsType"/>
+        <element name="diagnosis" type="string"/>
+      </sequence>
+    </complexType>
+  </element>
+  <element name="AppointmentServiceProcessResponse">
+    <complexType>
+      <sequence>
+        <element name="appointmentIdentifier" type="string"/>
+      </sequence>
+    </complexType>
+  </element>
+  <complexType name="appointmentRequestHeader">
+    <sequence>
+      <element name="doctorId" type="string"/>
+      <element name="typeOfAppointment" type="string"/>
+      <element name="priorityCode" type="integer"/>
+      <element name="labTestsToRun" type="string"/>
+    </sequence>
+  </complexType>
+  <complexType name="patientDetailsType">
+    <sequence>
+      <element name="firstGivenName" type="string"/>
+      <element name="lastName" type="string"/>
+      <element name="gender" type="string" minOccurs="0"/>
+      <element name="contactDetails" type="ap:contactDetailsType"/>
+      <element name="dateOfBirth" type="date" minOccurs="0"/>
+      <element name="insuranceData" type="ap:insuranceType" minOccurs="0"/>
+    </sequence>
+  </complexType>
+  <complexType name="contactDetailsType">
+    <sequence>
+      <element name="address" type="string"/>
+      <element name="city" type="string"/>
+      <element name="zipCode" type="string"/>
+      <element name="state" type="string"/>
+      <element name="emailAddresses" type="ap:listOfEmailAddresses"/>
+      <element name="phoneNumbers" type="ap:listOfPhoneNumbers"/>
+    </sequence>
+  </complexType>
+  <complexType name="listOfPhoneNumbers">
+    <sequence>
+      <element name="phoneNumber" type="string" minOccurs="0"
+               maxOccurs="unbounded"/>
+    </sequence>
+  </complexType>
+  <complexType name="listOfEmailAddresses">
+    <sequence>
+      <element name="emailAddress" type="string" minOccurs="0"
+               maxOccurs="unbounded"/>
+    </sequence>
+  </complexType>
+  <complexType name="insuranceType">
+    <sequence>
+      <element name="policyId" type="string"/>
+      <element name="expirationDate" type="date" minOccurs="0"/>
+    </sequence>
+  </complexType>
+</schema>
